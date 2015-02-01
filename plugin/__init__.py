@@ -4,7 +4,7 @@ from Components.Language import language
 from Tools.Directories import resolveFilename, SCOPE_PLUGINS
 import gettext
 
-PluginLanguageDomain = "OpenWebif"
+PluginLanguageDomain = "OpenNFR Webif"
 PluginLanguagePath = "Extensions/OpenWebif/locale"
 
 def localeInit():
