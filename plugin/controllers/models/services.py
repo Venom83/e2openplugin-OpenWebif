@@ -11,7 +11,7 @@
 import re, unicodedata
 from Tools.Directories import fileExists
 from Components.Sources.ServiceList import ServiceList
-from Components.ParentalControl import parentalControl, IMG_WHITESERVICE, IMG_WHITEBOUQUET, IMG_BLACKSERVICE, IMG_BLACKBOUQUET
+from Components.ParentalControl import parentalControl
 from Components.config import config
 from ServiceReference import ServiceReference
 from Screens.ChannelSelection import service_types_tv, service_types_radio, FLAG_SERVICE_NEW_FOUND
@@ -204,7 +204,16 @@ def getBouquets(stype):
 	serviceHandler = eServiceCenter.getInstance()
 	services = serviceHandler.list(eServiceReference('%s FROM BOUQUET "%s" ORDER BY bouquet'%(s_type, s_type2)))
 	bouquets = services and services.getContent("SN", True)
+	bouquets = removeHiddenBouquets(bouquets)
 	return { "bouquets": bouquets }
+
+def removeHiddenBouquets(bouquetList):
+	bouquets = []
+	for bouquet in bouquetList:
+		flags = int(bouquet[0].split(':')[1])
+		if not flags & eServiceReference.isInvisible:
+			bouquets.append(bouquet)
+	return bouquets
 
 def getProviders(stype):
 	s_type = service_types_tv
@@ -214,7 +223,6 @@ def getProviders(stype):
 	services = serviceHandler.list(eServiceReference('%s FROM PROVIDERS ORDER BY name'%(s_type)))
 	providers = services and services.getContent("SN", True)
 	return { "providers": providers }
-
 
 def getSatellites(stype):
 	ret = []
@@ -260,10 +268,9 @@ def getSatellites(stype):
 				"service": service.toString(),
 				"name": service.getName()
 			})
-		
-	ret = sortSatellites(ret)		
-			
+	ret = sortSatellites(ret)
 	return { "satellites": ret }
+
 def sortSatellites(satList):
 	import re
 	sortDict = {}
@@ -276,7 +283,7 @@ def sortSatellites(satList):
 		if orb > 3600:
 			orb *= -1
 		elif orb > 1800:
-			orb -= 3600 
+			orb -= 3600
 		if not orb in sortDict:
 			sortDict[orb] = []
 		sortDict[orb].append(i)
@@ -285,29 +292,27 @@ def sortSatellites(satList):
 	for l in sorted(sortDict.keys()):
 		for v in sortDict[l]:
 			outList.append(satList[v])
-	return outList	
+	return outList
 
 def getProtection(sref):
 	isProtected = "0"
-	if config.ParentalControl.configured.value:
-		protection = parentalControl.getProtectionType(sref)
-		if protection[0]:
-			if protection[1] == IMG_BLACKSERVICE:
-				#(locked -S-)
-				isProtected = "1"
-			elif protection[1] == IMG_BLACKBOUQUET:
-				#(locked -B-)
-				isProtected = "2"
-			elif protection[1] == "":
-				# (locked)
-				isProtected = "3"
-		else:
-			if protection[1] == IMG_WHITESERVICE:
-				#(unlocked -S-)
-				isProtected = "4"
-			elif protection[1] == IMG_WHITEBOUQUET:
-				#(unlocked -B-)
-				isProtected = "5"
+	if "configured" not in config.ParentalControl.dict().keys() or config.ParentalControl.configured.value:
+		protection = parentalControl.getProtectionLevel(sref)
+		if protection:
+			if "type" not in config.ParentalControl.dict().keys() or config.ParentalControl.type.value == LIST_BLACKLIST:
+				if parentalControl.blacklist.has_key(sref):
+					if "SERVICE" in parentalControl.blacklist.has_key(sref):
+						service['isprotected'] = '1'
+					elif "BOUQUET" in parentalControl.blacklist.has_key(sref):
+						service['isprotected'] = '2'
+					else:
+						service['isprotected'] = '3'
+			else:
+				if hasattr(ParentalControl, "whitelist") and parentalControl.whitelist.has_key(sref):
+					if "SERVICE" in parentalControl.whitelist.has_key(sref):
+						service['isprotected'] = '4'
+					elif "BOUQUET" in parentalControl.whitelist.has_key(sref):
+						service['isprotected'] = '5'
 	return isProtected
 
 def getChannels(idbouquet, stype):
@@ -328,7 +333,7 @@ def getChannels(idbouquet, stype):
 			chan = {}
 			chan['ref'] = quote(channel[0], safe=' ~@%#$&()*!+=:;,.?/\'')
 			chan['name'] = filterName(channel[1])
-			if config.ParentalControl.configured.value and config.OpenWebif.parentalenabled.value:
+			if ("configured" not in config.ParentalControl.dict().keys() or config.ParentalControl.configured.value) and config.OpenWebif.parentalenabled.value:
 				chan['protection'] = getProtection(channel[0])
 			else:
 				chan['protection'] = "0"
@@ -364,7 +369,7 @@ def getServices(sRef, showAll = True, showHidden = False):
 	for sitem in slist:
 		st = int(sitem[0].split(":")[1])
 		if not st & 512 or showHidden:
-			if showAll or st == 0: 
+			if showAll or st == 0:
 				service = {}
 				service['servicereference'] = sitem[0].encode("utf8")
 				service['servicename'] = sitem[1].encode("utf8")
@@ -460,16 +465,19 @@ def getEventDesc(ref, idev):
 
 def getEvent(ref, idev):
 	epgcache = eEPGCache.getInstance()
-	events = epgcache.lookupEvent(['BDTSENRX', (ref, 2, int(idev))])
+	events = epgcache.lookupEvent(['IBDTSENRX', (ref, 2, int(idev))])
 	info = {}
 	for event in events:
-		info['begin'] = event[0]
-		info['duration'] = event[1]
-		info['title'] = event[2]
-		info['shortdesc'] = event[3]
-		info['longdesc'] = event[4]
-		info['channel'] = event[5]
-		info['sref'] = event[6]
+		info['id'] = event[0]
+		info['begin_str'] = strftime("%H:%M", (localtime(event[1])))
+		info['begin'] = event[1]
+		info['end'] = strftime("%H:%M",(localtime(event[1] + event[2])))
+		info['duration'] = event[2]
+		info['title'] = filterName(event[3])
+		info['shortdesc'] = event[4]
+		info['longdesc'] = event[5]
+		info['channel'] = filterName(event[6])
+		info['sref'] = event[7]
 		break;
 	return { 'event': info }
 
@@ -673,7 +681,7 @@ def getSearchEpg(sstr, endtime=None):
 					ret.append(ev)
 			else:
 				ret.append(ev)
-		
+
 	return { "events": ret, "result": True }
 
 def getSearchSimilarEpg(ref, eventid):
@@ -814,13 +822,13 @@ def getPicon(sname):
 	return "/images/default_picon.png"
 
 def getParentalControlList():
-	if not config.ParentalControl.configured.value:
+	if "configured" in config.ParentalControl.dict().keys() and config.ParentalControl.configured.value:
 		return {
 			"result": True,
 			"services": []
 		}
 	parentalControl.open()
-	if config.ParentalControl.type.value == "whitelist":
+	if "type" not in config.ParentalControl.dict().keys() and config.ParentalControl.type.value == "whitelist":
 		tservices = parentalControl.whitelist
 	else:
 		tservices = parentalControl.blacklist
@@ -834,7 +842,7 @@ def getParentalControlList():
 			})
 	return {
 		"result": True,
-		"type": config.ParentalControl.type.value,
+		"type": "type" not in config.ParentalControl.dict().keys() and config.ParentalControl.type.value or "blacklist",
 		"services": services
 	}
 

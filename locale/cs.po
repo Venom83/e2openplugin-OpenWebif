@@ -250,7 +250,7 @@ msgid "Brand"
 msgstr "Značka"
 
 msgid "Cancel"
-msgstr "Zrušit"
+msgstr "Zavřít"
 
 msgid "Capacity"
 msgstr "Kapacita"
@@ -310,7 +310,7 @@ msgid "Dolby"
 msgstr ""
 
 msgid "Done"
-msgstr "Dokončit"
+msgstr "Dokončeno"
 
 msgid "Download"
 msgstr "stáhnout"
@@ -328,7 +328,7 @@ msgid "Enable Timer"
 msgstr "Povolit časovač"
 
 msgid "Start"
-msgstr ""
+msgstr "Začátek"
 
 msgid "End"
 msgstr "Konec"
@@ -943,7 +943,7 @@ msgid "VPS"
 msgstr ""
 
 msgid "VPS Overwrite"
-msgstr "VPS - bezpečný mód"
+msgstr "VPS řízeno vysíláním"
 
 msgid "Add"
 msgstr "Přidat"
@@ -1165,7 +1165,7 @@ msgid "TimerList has been saved"
 msgstr "Seznam časovačů byl uložen"
 
 msgid "No event found! Not recording!"
-msgstr ""
+msgstr "Nenalezena událost! Nenahrává se!"
 
 msgid "Instant record for current Event started"
 msgstr "Začalo okamžité nahrávání pro aktuální událost"
@@ -1174,13 +1174,13 @@ msgid "Infinite Instant recording started"
 msgstr "Začalo neomezené okamžité nahrávání"
 
 msgid "Timer conflict detected! Not recording!"
-msgstr ""
+msgstr "Konflikt časovačů! Nenahrává se!"
 
 msgid "Missing requesteter: sRef"
-msgstr ""
+msgstr "Chybějící požadavek: sRef"
 
 msgid "Unknown command: '%s'"
-msgstr ""
+msgstr "Neznámý příkaz: '%s'"
 
 msgid "PowerTimer feature not available"
 msgstr ""
@@ -1202,3 +1202,12 @@ msgstr "Časovač usínání byl zakázán"
 
 msgid "Sleeptimer set to %d minutes"
 msgstr "Časovač usínání nastaven na %d minut"
+
+msgid "Safe mode"
+msgstr "Bezpečný mód"
+
+msgid "Close"
+msgstr "Zavřít"
+
+msgid "Open in new window"
+msgstr "Otevřít v novém okně"
